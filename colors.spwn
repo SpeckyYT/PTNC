@@ -1,0 +1,35 @@
+#[cache_output]
+
+color_names = [
+    ["pink", rgb8(255,105,180)],
+    ["green", rgb8(0,255,0)],
+    ["red", rgb8(255,0,0)],
+    ["yellow", rgb8(255,255,0)],
+    ["orange", rgb8(255,128,0)],
+    ["magenta", rgb8(128,0,255)],
+    ["blue", rgb8(0,0,255)],
+    ["start", rgb8(255,255,255)],
+    ["end", rgb8(0,0,0)],
+]
+
+let colors = {}
+
+for [color_name, color] in color_names {
+    let colors[color_name] = {
+        color: ?c,
+        block: ?b,
+    }
+    colors[color_name].color.set(color)
+}
+
+return {
+    colors,
+    get_color: (input: @string) -> @dictionary {
+        for [key, value] in colors.items() {
+            if key.uppercase().starts_with(input) {
+                return value
+            }
+        }
+        throw "Color '{}' not found".fmt(input)
+    }
+}

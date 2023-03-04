@@ -1,0 +1,126 @@
+gs = import gamescene
+import "lib.spwn"
+extract import "colors.spwn"
+extract obj_props
+
+// DONE
+// S start
+// P pink (does nothing)
+// G green (does nothing)
+// R red (pushes you back)
+// Y yellow (pushes you back, affects adjacent blue tiles)
+// M magenta (soap) (replaced "purple")
+// O orange (adds orange flavor)
+// B blue (water)
+
+// TODO
+// E end
+
+MOVE_TIME = 0.1
+MOVE_DISTANCE = 30
+
+level_1 = $.readfile("level1.txt")
+
+let game = @ptnc::new(@ptnc::parse_level(level_1), MOVE_DISTANCE)
+
+game.display_level(105, 45)
+game.display_player()
+
+player_display = ?g
+player_color = ?c
+
+$.add(obj {
+    OBJ_ID: 211,
+    X: game.start.x,
+    Y: game.start.y,
+    SCALING: MOVE_DISTANCE / 30 * 0.5,
+    GROUPS: player_display,
+    COLOR: player_color,
+    Z_LAYER: 50,
+})
+
+player_display.follow(game.player.body.group)
+player_color.set(rgb8(128,128,128))
+
+flavor = counter(false) // true = orange flavor
+flavor.display(45,45)
+electrocuted = counter(false) // true = tile electrocuted
+electrocuted.display(45,75)
+can_move = counter()
+can_move.display(45,105)
+is_moving = counter() // 0 = safe, >=1 = is moving
+is_moving.display(45,135)
+
+on(gs.button_a(), !{
+    if is_moving <= 0 && can_move > 0 {
+        is_moving++
+        game.player.body.group.move_to(game.player.hand.group, MOVE_TIME)
+        is_moving--
+    }
+})
+on(gs.button_b(), !{
+    if is_moving <= 0 {
+        game.player.hand.group.rotate(game.player.body.group, 90)
+    }
+})
+
+move_back = !{
+    @log::runtime::flash(rgb8(255,0,0))
+    is_moving++
+    game.player.hand.group.rotate(game.player.body.group, 180)
+    wait()
+    game.player.body.group.move_to(game.player.hand.group, MOVE_TIME)
+    is_moving--
+}
+
+player_collision = (block: @block|@dictionary, function: @trigger_function) {
+    output_block = match block {
+        @block: block,
+        @dictionary: block.block,
+    }
+    -> on(collision(game.player.body.block, output_block), function)
+}
+
+on(collision(colors.yellow.block, game.adjacent_blocks.block), !{
+    electrocuted = true
+})
+on(collision_exit(colors.yellow.block, game.adjacent_blocks.block), !{
+    electrocuted = false
+})
+
+player_collision(colors.end, !{ @log::runtime::flash(rgb8(0,0,0)) })
+player_collision(colors.red, move_back)
+player_collision(colors.yellow, move_back)
+player_collision(colors.orange, !{ flavor = true })
+player_collision(colors.blue, !{
+    wait()
+    if @bool(flavor) || @bool(electrocuted) {
+        move_back!
+    }
+})
+player_collision(colors.magenta, !{
+    @log::runtime::flash(rgb8(0,255,0))
+    flavor = false
+    is_moving++
+    cunter = counter(false)
+    move = () => game.player.body.group.move_to(game.player.hand.group, MOVE_TIME)
+    match @bool(cunter) {
+        ==false: () {
+            cunter += 1
+            move()
+        } (),
+        ==true: () {
+            cunter -= 1
+            move()
+        } (),
+    }
+    is_moving--
+})
+
+incr_can_move = !{ can_move++ }
+decr_can_move = !{ can_move-- }
+
+for color in colors.values() {
+    on(collision(game.player.hand.block, color.block), incr_can_move)
+    on(collision_exit(game.player.hand.block, color.block), decr_can_move)
+}
