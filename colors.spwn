@@ -1,13 +1,13 @@
 #[cache_output]
 
 color_names = [
-    ["pink", rgb8(255,105,180)],
-    ["green", rgb8(0,255,0)],
-    ["red", rgb8(255,0,0)],
-    ["yellow", rgb8(255,255,0)],
-    ["orange", rgb8(255,128,0)],
-    ["magenta", rgb8(128,0,255)],
-    ["blue", rgb8(0,0,255)],
+    ["pink", rgb8(253, 189, 192)],
+    ["green", rgb8(161, 255, 134)],
+    ["red", rgb8(252, 33, 67)],
+    ["yellow", rgb8(255, 253, 141)],
+    ["orange", rgb8(254, 188, 89)],
+    ["magenta", rgb8(189, 0, 187)],
+    ["blue", rgb8(62, 77, 248)],
     ["start", rgb8(255,255,255)],
     ["end", rgb8(0,0,0)],
 ]

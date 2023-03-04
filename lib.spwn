@@ -43,15 +43,15 @@ impl @ptnc {
                 if self.level[y][x] == " " { continue }
 
                 current_color = get_color(self.level[y][x])
-        
+
                 object_x = x_offset + x * self.distance
                 object_y = y_offset + y * self.distance
-        
+
                 let hitbox_groups = []
 
                 if self.level[y][x] == "S" {
                     self.start.x = object_x
-                    self.start.y = object_y 
+                    self.start.y = object_y
                     hitbox_groups.push(self.start.group)
                 }
 
@@ -99,7 +99,7 @@ impl @ptnc {
 
         // electricity-water checker
         distances = [0,1,2,3].map(i=>[$.cos(i*PI/2),$.sin(i*PI/2)].map(v=>self.distance*v))
-        
+
         for [ x_off, y_off ] in distances {
             $.add(obj {
                 OBJ_ID: 1816,
