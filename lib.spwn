@@ -7,7 +7,11 @@ impl @ptnc {
         return @ptnc::{
             level,
             distance,
-            start: { x: 0, y: 0 },
+            start: {
+                x: 0,
+                y: 0,
+                group: ?g,
+            },
             player: {
                 body: { group: ?g, block: ?b },
                 arm: ?g,
@@ -43,9 +47,12 @@ impl @ptnc {
                 object_x = x_offset + x * self.distance
                 object_y = y_offset + y * self.distance
         
+                let hitbox_groups = []
+
                 if self.level[y][x] == "S" {
                     self.start.x = object_x
                     self.start.y = object_y 
+                    hitbox_groups.push(self.start.group)
                 }
 
                 // block display
@@ -63,7 +70,7 @@ impl @ptnc {
                     Y: object_y,
                     BLOCK_A: current_color.block,
                     SCALING: self.distance / 30 * 0.01,
-                    GROUPS: self.invis(),
+                    GROUPS: self.invis(hitbox_groups),
                 })
             }
         }
@@ -90,14 +97,9 @@ impl @ptnc {
             DYNAMIC_BLOCK: true,
         })
 
-        distances = [
-            [self.distance, 0],
-            [0, self.distance],
-            [-self.distance, 0],
-            [0, -self.distance]
-        ]
-
         // electricity-water checker
+        distances = [0,1,2,3].map(i=>[$.cos(i*PI/2),$.sin(i*PI/2)].map(v=>self.distance*v))
+        
         for [ x_off, y_off ] in distances {
             $.add(obj {
                 OBJ_ID: 1816,
