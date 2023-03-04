@@ -3,21 +3,41 @@ extract obj_props
 
 type @ptnc
 impl @ptnc {
-    new: (level: [[@string]], distance: @number = 30) {
+    new: (level: [[@string]], distance: @number = 30, invisible: @bool = true) {
         return @ptnc::{
             level,
             distance,
             start: { x: 0, y: 0 },
             player: {
                 body: { group: ?g, block: ?b },
+                arm: ?g,
                 hand: { group: ?g, block: ?b },
             },
             adjacent_blocks: { group: ?g, block: ?b },
+            invisible: () {
+                if invisible {
+                    invisible_group = ?g
+                    invisible_group.alpha(0)
+                    return invisible_group
+                }
+            } (),
         }
+    },
+    parse_level: (input: @string) -> [[@string]] {
+        lines = input.replace(r"\r?\n","\n").split("\n").filter(v => v.trim().length > 0)
+        return lines.map(l => @array(l))
+    },
+    invis: (self, anything = []) {
+        return match anything {
+            @array: anything,
+            else: [anything],
+        } + ([self.invisible] if self.invisible is @group else [])
     },
     display_level: (self, x_offset: @number, y_offset: @number) -> @dictionary {
         for y in 0..self.level.length {
             for x in 0..self.level[y].length {
+                if self.level[y][x] == " " { continue }
+
                 current_color = get_color(self.level[y][x])
         
                 object_x = x_offset + x * self.distance
@@ -27,7 +47,8 @@ impl @ptnc {
                     self.start.x = object_x
                     self.start.y = object_y 
                 }
-        
+
+                // block display
                 $.add(obj {
                     OBJ_ID: 211,
                     X: object_x,
@@ -35,33 +56,37 @@ impl @ptnc {
                     COLOR: current_color.color,
                     SCALING: self.distance / 30,
                 })
+                // hitbox
                 $.add(obj {
                     OBJ_ID: 1816,
                     X: object_x,
                     Y: object_y,
                     BLOCK_A: current_color.block,
-                    SCALING: 0.01,
+                    SCALING: self.distance / 30 * 0.01,
+                    GROUPS: self.invis(),
                 })
             }
         }
     },
     display_player: (self) -> @dictionary {
+        // body hitbox
         $.add(obj {
             OBJ_ID: 1816,
             X: self.start.x,
             Y: self.start.y,
             BLOCK_A: self.player.body.block,
-            GROUPS: self.player.body.group,
-            SCALING: 0.1,
+            GROUPS: self.invis(self.player.body.group),
+            SCALING: self.distance / 30 * 0.1,
             DYNAMIC_BLOCK: true,
         })
+        // hand hitbox
         $.add(obj {
             OBJ_ID: 1816,
             X: self.start.x - self.distance,
             Y: self.start.y,
             BLOCK_A: self.player.hand.block,
-            GROUPS: self.player.hand.group,
-            SCALING: 0.1,
+            GROUPS: self.invis([self.player.hand.group, self.player.arm]),
+            SCALING: self.distance / 30 * 0.1,
             DYNAMIC_BLOCK: true,
         })
 
@@ -79,17 +104,13 @@ impl @ptnc {
                 X: self.start.x + x_off,
                 Y: self.start.y + y_off,
                 BLOCK_A: self.adjacent_blocks.block,
-                GROUPS: self.adjacent_blocks.group,
-                SCALING: 0.1,
+                GROUPS: self.invis(self.adjacent_blocks.group),
+                SCALING: self.distance / 30 * 0.3,
                 DYNAMIC_BLOCK: true,
             })
         }
 
-        -> self.player.hand.group.follow(self.player.body.group)
+        -> self.player.arm.follow(self.player.body.group)
         -> self.adjacent_blocks.group.follow(self.player.body.group)
-    },
-    parse_level: (input: @string) -> [[@string]] {
-        lines = input.replace(r"\r?\n","\n").split("\n").filter(v => v.trim().length > 0)
-        return lines.map(l => @array(l))
     },
 }

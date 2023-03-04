@@ -29,6 +29,7 @@ game.display_player()
 player_display = ?g
 player_color = ?c
 
+// body display
 $.add(obj {
     OBJ_ID: 211,
     X: game.start.x,
@@ -37,6 +38,17 @@ $.add(obj {
     GROUPS: player_display,
     COLOR: player_color,
     Z_LAYER: 50,
+})
+// arm display
+$.add(obj {
+    OBJ_ID: 1603,
+    X: game.start.x - MOVE_DISTANCE / 2,
+    Y: game.start.y,
+    SCALING: MOVE_DISTANCE / 30 * 0.5,
+    GROUPS: game.player.arm,
+    COLOR: player_color,
+    Z_LAYER: 50,
+    ROTATION: 180,
 })
 
 player_display.follow(game.player.body.group)
@@ -60,14 +72,14 @@ on(gs.button_a(), !{
 })
 on(gs.button_b(), !{
     if is_moving <= 0 {
-        game.player.hand.group.rotate(game.player.body.group, 90)
+        game.player.arm.rotate(game.player.body.group, 90)
     }
 })
 
 move_back = !{
     @log::runtime::flash(rgb8(255,0,0))
     is_moving++
-    game.player.hand.group.rotate(game.player.body.group, 180)
+    game.player.arm.rotate(game.player.body.group, 180)
     wait()
     game.player.body.group.move_to(game.player.hand.group, MOVE_TIME)
     is_moving--
