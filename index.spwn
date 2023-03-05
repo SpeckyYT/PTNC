@@ -16,7 +16,8 @@ extract obj_props
 // TODO
 // E end
 
-MOVE_TIME = 0.1
+ROTATE_TIME = 0.1
+MOVE_TIME = 0.2
 MOVE_DISTANCE = 30
 
 level_1 = $.readfile("level1.txt")
@@ -63,17 +64,28 @@ can_move.display(45,105)
 is_moving = counter() // 0 = safe, >=1 = is moving
 is_moving.display(45,135)
 
-on(gs.button_a(), !{
-    if is_moving <= 0 && can_move > 0 {
-        is_moving++
-        game.player.body.group.move_to(game.player.hand.group, MOVE_TIME)
-        is_moving--
+input_check = (intern: @macro = () {}) { // safety measure
+    if is_moving <= 0 {
+        wait()
+        if is_moving <= 0 {
+            is_moving++
+            intern()
+            is_moving--
+        }
     }
+}
+
+on(gs.button_a(), !{
+    input_check(() {
+        if can_move > 0 {
+            game.player.body.group.move_to(game.player.hand.group, MOVE_TIME)
+        }
+    })
 })
 on(gs.button_b(), !{
-    if is_moving <= 0 {
-        game.player.arm.rotate(game.player.body.group, 90)
-    }
+    input_check(() {
+        game.player.arm.rotate(game.player.body.group, 90, ROTATE_TIME)
+    })
 })
 
 move_back = !{
@@ -111,22 +123,25 @@ player_collision(colors.blue, !{
     }
 })
 player_collision(colors.magenta, !{
-    @log::runtime::flash(rgb8(0,255,0))
-    flavor = false
-    is_moving++
-    cunter = counter(false)
-    move = () => game.player.body.group.move_to(game.player.hand.group, MOVE_TIME)
-    match @bool(cunter) {
-        ==false: () {
-            cunter += 1
-            move()
-        } (),
-        ==true: () {
-            cunter -= 1
-            move()
-        } (),
+    wait()
+    if can_move > 0 {
+        @log::runtime::flash(rgb8(0,255,0))
+        flavor = false
+        is_moving++
+        cunter = counter(false)
+        move = () => game.player.body.group.move_to(game.player.hand.group, MOVE_TIME)
+        match @bool(cunter) {
+            ==false: () {
+                cunter += 1
+                move()
+            } (),
+            ==true: () {
+                cunter -= 1
+                move()
+            } (),
+        }
+        is_moving--
     }
-    is_moving--
 })
 
 incr_can_move = !{ can_move++ }
