@@ -40,16 +40,18 @@ impl @ptnc {
     display_level: (self, x_offset: @number, y_offset: @number) -> @dictionary {
         for y in 0..self.level.length {
             for x in 0..self.level[y].length {
-                if self.level[y][x] == " " { continue }
+                current_character = self.level[self.level.length - y - 1][x]
 
-                current_color = get_color(self.level[y][x])
+                if current_character == " " { continue }
+
+                current_color = get_color(current_character)
 
                 object_x = x_offset + x * self.distance
                 object_y = y_offset + y * self.distance
 
                 let hitbox_groups = []
 
-                if self.level[y][x] == "S" {
+                if current_character == "S" {
                     self.start.x = object_x
                     self.start.y = object_y
                     hitbox_groups.push(self.start.group)
@@ -107,7 +109,7 @@ impl @ptnc {
                 Y: self.start.y + y_off,
                 BLOCK_A: self.adjacent_blocks.block,
                 GROUPS: self.invis(self.adjacent_blocks.group),
-                SCALING: self.distance / 30 * 0.3,
+                SCALING: self.distance / 30 * 0.4,
                 DYNAMIC_BLOCK: true,
             })
         }
