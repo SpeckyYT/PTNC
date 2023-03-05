@@ -123,10 +123,10 @@ player_collision(colors.blue, !{
     }
 })
 player_collision(colors.magenta, !{
+    flavor = false // this needs to happen always
     wait()
     if can_move > 0 {
         @log::runtime::flash(rgb8(0,255,0))
-        flavor = false
         is_moving++
         cunter = counter(false)
         move = () => game.player.body.group.move_to(game.player.hand.group, MOVE_TIME)
