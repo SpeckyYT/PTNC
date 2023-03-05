@@ -1,0 +1,11 @@
+-- Welcome to PATIENCE. Your goal is to reach the checkered space.
+-- Swipe up, down, left, or right anywhere on the screen to move. You don't have to touch the puzzle or your character.
+-- Up first are <pink> spaces! ...they do absolutely nothing.
+# Reach the checkered goal to proceed.
+# Pink spaces are harmless
+
+PPPPPPP
+PPPPPPP
+SPPPPPE
+PPPPPPP
+PPPPPPP

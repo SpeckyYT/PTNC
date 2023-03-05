@@ -1,0 +1,11 @@
+-- <Blue> spaces are full of friendly fish! And... Oh yeah! Those pesky yellow spaces electrify adjacent blue spaces.
+-- If a blue space is next to yellow, you won't be able to step on it. Sorry...
+# Blue spaces can't be crossed if they are next to yellow spaces.
+
+GGMBBBYBBMPPP
+GGMBBBBYBMRPP
+GGMBBBBBYMRPP
+SGMBYBBBBMRPE
+GGMBBBBBBMRPP
+GGMBBBYBBMRPP
+GGMBBBBBBMPPP

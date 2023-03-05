@@ -1,0 +1,11 @@
+-- <Green> spaces summon monsters to attack you!
+-- At least, they used to... but nobody has come for a long time. They are probably safe to step on, too.
+# Green spaces appear to do nothing...
+
+PPRRRRRRPP
+PPRGGGGPPP
+PPRGGGGRPP
+SPRGGGGRPE
+PPRGGGGRPP
+PPPGGGGRPP
+PPRRRRRRPP

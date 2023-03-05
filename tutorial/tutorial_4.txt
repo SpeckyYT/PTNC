@@ -1,0 +1,11 @@
+-- <Purple> spaces are slippery soap! Step on them and you'll slide into the next space.
+-- You could get stuck here. Tap the "Restart" button at the top left to return to your starting point if you ever got trapped.
+# Purple spaces will slide you to the next space. This will continue until you come to a stop. If you get stuck, hit the Restart button to try again.
+
+GGGGGRMMMMR
+MMMMMRPPPMM
+MMMGMMPPPRM
+SMMMMRPPPRE
+MMMGMMPPPRM
+MMMMMRPPPMM
+GGGGGRMMMMR

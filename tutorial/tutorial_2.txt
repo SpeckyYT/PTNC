@@ -1,0 +1,11 @@
+-- <Red> spaces are lava or something! You can't step on them. I know it's scary... but please proceed carefully.
+# Red spaces cannot be corssed.
+# Continue to each goal.
+
+RRRRRRRR
+RRRRRRRR
+PPPPPPPP
+SPPPPPPE
+PPPPPPPP
+RRRRRRRR
+RRRRRRRR

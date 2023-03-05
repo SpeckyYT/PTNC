@@ -1,0 +1,12 @@
+-- Finally, <orange> spaces... They will make you taste like disgusting oranges!
+-- For some reason fish love oranges and if you taste like one, they might bite you when you step on blue spaces.
+-- The only way to wash off the flavor is to slide through slippery purple spaces.
+# Orange spaces will make you orange-flavored. You cannot cross blue spaces if you are orange-flavored. Purple spaces will remove the orange flavor.
+
+PBBGRGGBBBOGMMR
+PBBMRMGBYBOGYYY
+PBBMRGGBBBOGBBB
+SYYGOGGBBBOGBBE
+PBBMRGGBBBOGBBB
+PBBMRMGBYBOGYYY
+PBBGRMGBBBOGMMR

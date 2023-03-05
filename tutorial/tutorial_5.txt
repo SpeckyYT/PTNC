@@ -1,0 +1,10 @@
+-- <Yellow> spaces are electrified! You can't step on them, either. I think they do something else too, but I can't remember...
+# Yellow spaces also cannot be crossed.
+
+RRRRRRRPPRRR
+RGYGMMMMMMGR
+RGMMMYGMMMMR
+SGMMGYYMGMME
+RGMMMMMMMMMR
+RGMGYYGMMMGR
+RRRRRRPPRRRR
