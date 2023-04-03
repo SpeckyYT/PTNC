@@ -12,60 +12,89 @@ extract obj_props
 // M magenta (soap) (replaced "purple")
 // O orange (adds orange flavor)
 // B blue (water)
-
-// TODO
 // E end
+
+BG.set(rgb(0,0,0))
+GROUND.set(rgb(0,0,0))
+LINE.set(rgb(0,0,0))
+toggle_bg_effect(false)
 
 ROTATE_TIME = 0.1
 MOVE_TIME = 0.2
 MOVE_DISTANCE = 30
+LEVELS_DISTANCE = 30 * 20
+LEVELS_ANIMATION_TIME = 2
+LEVEL_POSITION_X = 135
+LEVEL_POSITION_Y = 45
+DEBUG_MODE = false
+FLAVOR_POSITION_X = 60
+FLAVOR_POSITION_Y = 210
 
-level_1 = $.readfile("level1.txt")
-
-let game = @ptnc::new(@ptnc::parse_level(level_1), MOVE_DISTANCE)
-
-game.display_level(105, 45)
-game.display_player()
+$.add(obj {
+    OBJ_ID: 1,
+    X: 30 * 8.373 * 60 * 60 * 1, // 1 hour seems good enough
+    Y: -15,
+})
 
 player_display = ?g
 player_color = ?c
 
-// body display
-$.add(obj {
-    OBJ_ID: 211,
-    X: game.start.x,
-    Y: game.start.y,
-    SCALING: MOVE_DISTANCE / 30 * 0.5,
-    GROUPS: player_display,
-    COLOR: player_color,
-    Z_LAYER: 50,
-})
-// arm display
-$.add(obj {
-    OBJ_ID: 1603,
-    X: game.start.x - MOVE_DISTANCE / 2,
-    Y: game.start.y,
-    SCALING: MOVE_DISTANCE / 30 * 0.5,
-    GROUPS: game.player.arm,
-    COLOR: player_color,
-    Z_LAYER: 50,
-    ROTATION: 180,
-})
+lemon_group = ?g
+orange_group = ?g
+orange_group.toggle_off()
+
+all_levels = ?g
+adjacent_blocks_group = ?g
+adjacent_blocks_block = ?b
+
+level_folder = "levels" // "tutorial"
+file_name = "level_{}.txt" // "tutorial_{}.txt"
+
+let levels = []
+for i in 0..5 {
+    level_string = $.readfile("{}/{}".fmt([level_folder, file_name.fmt(i+1)]))
+    let game = @ptnc::new(
+        @ptnc::parse_level(level_string),
+        MOVE_DISTANCE,
+        true,
+        all_levels,
+        adjacent_blocks_group,
+        adjacent_blocks_block,
+    )
+    game.display_level(LEVEL_POSITION_X, LEVEL_POSITION_Y + i * LEVELS_DISTANCE)
+    levels.push(game)
+}
+let game = levels[0]
+game.display_player()
 
 player_display.follow(game.player.body.group)
-player_color.set(rgb8(128,128,128))
+player_color.set(rgb8(255,0,0))
+
+-> () {
+    wait(0.7)
+    -> orange_group.lock_to_player(lock_x = true, lock_y = false)
+    -> lemon_group.lock_to_player(lock_x = true, lock_y = false)
+    -> all_levels.lock_to_player(lock_x = true, lock_y = false)
+} ()
 
 flavor = counter(false) // true = orange flavor
-flavor.display(45,45)
 electrocuted = counter(false) // true = tile electrocuted
-electrocuted.display(45,75)
-can_move = counter()
-can_move.display(45,105)
+can_move = counter(bits = 4) // 4 bits of safety (can become 3+ when switching levels)
 is_moving = counter() // 0 = safe, >=1 = is moving
-is_moving.display(45,135)
+is_finished = counter(false)
+current_level = counter(bits = levels.length.log(2).ceil())
+
+display_tower = (array: [@counter]) {
+    if DEBUG_MODE {
+        for i in 0..array {
+            array[i].display(45, 45 + i * 30)
+        }
+    }
+}
+display_tower([ flavor, electrocuted, can_move, is_moving, is_finished, current_level ])
 
 input_check = (intern: @macro = () {}) { // safety measure
-    if is_moving <= 0 {
+    if is_moving <= 0 && is_finished <= 0 {
         wait()
         if is_moving <= 0 {
             is_moving++
@@ -78,20 +107,25 @@ input_check = (intern: @macro = () {}) { // safety measure
 on(gs.button_a(), !{
     input_check(() {
         if can_move > 0 {
-            game.player.body.group.move_to(game.player.hand.group, MOVE_TIME)
+            game.player.body.group.move_to(game.player.hand.group, MOVE_TIME, easing = EASE_IN_OUT)
         }
     })
 })
 on(gs.button_b(), !{
     input_check(() {
-        game.player.arm.rotate(game.player.body.group, 90, ROTATE_TIME)
+        game.player.arm.rotate(game.player.body.group, 90, ROTATE_TIME, easing = EASE_IN_OUT)
     })
 })
 
 move_back = !{
-    @log::runtime::flash(rgb8(255,0,0))
     is_moving++
     game.player.arm.rotate(game.player.body.group, 180)
+    -> () {
+        -> shake(1, 0, 0.1)
+        player_display.move(1, 0, 0.1, EASE_IN_OUT)
+        player_display.move(-2, 0, 0.1, EASE_IN_OUT)
+        player_display.move(1, 0, 0.1, EASE_IN_OUT)
+    } ()
     wait()
     game.player.body.group.move_to(game.player.hand.group, MOVE_TIME)
     is_moving--
@@ -105,17 +139,47 @@ player_collision = (block: @block|@dictionary, function: @trigger_function) {
     -> on(collision(game.player.body.block, output_block), function)
 }
 
-on(collision(colors.yellow.block, game.adjacent_blocks.block), !{
+on(collision(colors.yellow.block, game.player.adjacent_blocks.block), !{
     electrocuted = true
 })
-on(collision_exit(colors.yellow.block, game.adjacent_blocks.block), !{
+on(collision_exit(colors.yellow.block, game.player.adjacent_blocks.block), !{
     electrocuted = false
 })
 
-player_collision(colors.end, !{ @log::runtime::flash(rgb8(0,0,0)) })
+jump_to_level = !{
+    level_index = current_level.to_const(0..levels.length)
+    -> game.player.body.group.move_to(levels[level_index].start.group)
+}
+
+player_collision(colors.end, !{
+    if is_finished <= 0 {
+        is_finished++
+        all_levels.move(0, -LEVELS_DISTANCE / 2 / 3, LEVELS_ANIMATION_TIME / 2, EASE_IN)
+        wait()
+
+        current_level++
+        flavor = false
+        orange_group.toggle_off()
+        lemon_group.toggle_on()
+        -> player_color.set(rgb8(255,0,0))
+        jump_to_level!
+
+        wait()
+        all_levels.move(0, -LEVELS_DISTANCE / 2 / 3, LEVELS_ANIMATION_TIME / 2, EASE_OUT)
+        is_finished--
+
+        jump_to_level!
+        can_move = 1 // this is dumb, but I don't know how else to fix it
+    }
+})
 player_collision(colors.red, move_back)
 player_collision(colors.yellow, move_back)
-player_collision(colors.orange, !{ flavor = true })
+player_collision(colors.orange, !{
+    flavor = true
+    orange_group.toggle_on()
+    lemon_group.toggle_off()
+    -> player_color.set(rgb8(255,128,0), 0.25)
+})
 player_collision(colors.blue, !{
     wait()
     if @bool(flavor) || @bool(electrocuted) {
@@ -124,9 +188,11 @@ player_collision(colors.blue, !{
 })
 player_collision(colors.magenta, !{
     flavor = false // this needs to happen always
+    lemon_group.toggle_on()
+    orange_group.toggle_off()
+    -> player_color.set(rgb8(255,0,0), 0.25)
     wait()
     if can_move > 0 {
-        @log::runtime::flash(rgb8(0,255,0))
         is_moving++
         cunter = counter(false)
         move = () => game.player.body.group.move_to(game.player.hand.group, MOVE_TIME)
@@ -151,3 +217,73 @@ for color in colors.values() {
     on(collision(game.player.hand.block, color.block), incr_can_move)
     on(collision_exit(game.player.hand.block, color.block), decr_can_move)
 }
+
+// // body display
+// $.add(obj {
+//     OBJ_ID: 211,
+//     X: game.start.x,
+//     Y: game.start.y,
+//     SCALING: MOVE_DISTANCE / 30 * 0.5,
+//     GROUPS: player_display,
+//     COLOR: player_color,
+//     Z_LAYER: 50,
+// })
+// arm display
+$.add(obj {
+    OBJ_ID: 1603,
+    X: game.start.x - MOVE_DISTANCE * 0.6,
+    Y: game.start.y,
+    SCALING: MOVE_DISTANCE / 30 * 0.5,
+    GROUPS: game.player.arm,
+    COLOR: player_color,
+    Z_LAYER: 50,
+    ROTATION: 180,
+})
+
+lemon = @ptnc::parse_asset(
+    $.readfile("assets/lemon.txt"),
+    (char) {
+        return match char {
+            =="0": rgb8(255,200,15),
+            =="1": rgb8(255,245,0),
+            =="2": rgb8(255,255,255),
+            =="#": null,
+        }
+    }
+)
+orange = @ptnc::parse_asset(
+    $.readfile("assets/orange.txt"),
+    (char) {
+        return match char {
+            =="0": rgb8(0,0,0),
+            =="1": rgb8(255,128,32),
+            =="2": rgb8(255,200,16),
+            =="3": rgb8(255,255,255),
+            =="#": null,
+        }
+    }
+)
+@ptnc::add_asset(lemon, FLAVOR_POSITION_X, FLAVOR_POSITION_Y, 0.2, (object) {
+    let object = object
+    object.add_groups(lemon_group)
+    return object
+})
+@ptnc::add_asset(orange, FLAVOR_POSITION_X, FLAVOR_POSITION_Y, 0.2, (object) {
+    let object = object
+    object.add_groups(orange_group)
+    return object
+})
+
+heart = @ptnc::parse_asset(
+    $.readfile("assets/heart.txt"),
+    (char) => match char {
+        =="0": player_color,
+        _: null,
+    }
+)
+@ptnc::add_asset(heart, game.start.x, game.start.y, MOVE_DISTANCE / 16 / 30 * 0.8, (object) {
+    let object = object
+    object.add_groups(player_display)
+    object.set(Z_LAYER, 9999)
+    return object
+})

@@ -1,9 +1,18 @@
 extract import "colors.spwn"
 extract obj_props
 
+let color_cache = []
+
 type @ptnc
 impl @ptnc {
-    new: (level: [[@string]], distance: @number = 30, invisible: @bool = true) {
+    new: (
+        level: [[@string]],
+        distance: @number = 30,
+        invisible: @bool = true,
+        group: @group = ?g,
+        adjacent_blocks_group: @group = ?g,
+        adjacent_blocks_block: @block = ?b,
+    ) {
         return @ptnc::{
             level,
             distance,
@@ -16,8 +25,8 @@ impl @ptnc {
                 body: { group: ?g, block: ?b },
                 arm: ?g,
                 hand: { group: ?g, block: ?b },
+                adjacent_blocks: { group: adjacent_blocks_group, block: adjacent_blocks_block },
             },
-            adjacent_blocks: { group: ?g, block: ?b },
             invisible: () {
                 if invisible {
                     invisible_group = ?g
@@ -25,10 +34,11 @@ impl @ptnc {
                     return invisible_group
                 }
             } (),
+            group: group,
         }
     },
     parse_level: (input: @string) -> [[@string]] {
-        lines = input.replace(r"\r?\n","\n").split("\n").filter(v => v.trim().length > 0)
+        lines = input.replace(r"\r?\n","\n").split("\n").filter(v => v.trim().length > 0 && !(v[0] in "#- ".split("")))
         return lines.map(l => @array(l))
     },
     invis: (self, anything = []) {
@@ -63,6 +73,7 @@ impl @ptnc {
                     X: object_x,
                     Y: object_y,
                     COLOR: current_color.color,
+                    GROUPS: [self.group],
                     SCALING: self.distance / 30,
                 })
                 // hitbox
@@ -72,7 +83,7 @@ impl @ptnc {
                     Y: object_y,
                     BLOCK_A: current_color.block,
                     SCALING: self.distance / 30 * 0.01,
-                    GROUPS: self.invis(hitbox_groups),
+                    GROUPS: self.invis(hitbox_groups + [self.group]),
                 })
             }
         }
@@ -84,7 +95,7 @@ impl @ptnc {
             X: self.start.x,
             Y: self.start.y,
             BLOCK_A: self.player.body.block,
-            GROUPS: self.invis(self.player.body.group),
+            GROUPS: self.invis([self.player.body.group, self.group]),
             SCALING: self.distance / 30 * 0.1,
             DYNAMIC_BLOCK: true,
         })
@@ -107,14 +118,53 @@ impl @ptnc {
                 OBJ_ID: 1816,
                 X: self.start.x + x_off,
                 Y: self.start.y + y_off,
-                BLOCK_A: self.adjacent_blocks.block,
-                GROUPS: self.invis(self.adjacent_blocks.group),
+                BLOCK_A: self.player.adjacent_blocks.block,
+                GROUPS: self.invis(self.player.adjacent_blocks.group),
                 SCALING: self.distance / 30 * 0.4,
                 DYNAMIC_BLOCK: true,
             })
         }
 
         -> self.player.arm.follow(self.player.body.group)
-        -> self.adjacent_blocks.group.follow(self.player.body.group)
+        -> self.player.adjacent_blocks.group.follow(self.player.body.group)
+    },
+    parse_asset: (asset: @string, char_map: (@string) -> @chroma|@color|@NULL) {
+        return asset.
+            replace("\r", "").
+            split("\n").
+            filter(l => l.trim().length > 0).
+            map(l => l.split("").map(c => char_map(c))).
+            reverse() // now it will go from the bottom to the top
+    },
+    add_asset: (asset: @array, x_offset: @number, y_offset: @number, scaling: @number, obj_map: (@object) -> @object|@NULL) {
+        for y in 0..asset.length {
+            for x in 0..asset[y].length {
+                color_channel = match asset[y][x] {
+                    @NULL: _,
+                    @chroma: () {
+                        let outputs = color_cache.filter(v => v[0] == asset[y][x])
+                        return match outputs.length {
+                            >0: outputs[0][1],
+                            ==0: () {
+                                cache = ?c
+                                cache.set(asset[y][x])
+                                color_cache.push([ asset[y][x], cache ])
+                                return cache
+                            } (),
+                        }
+                    } (),
+                    @color: asset[y][x],
+                }
+                if asset[y][x] is @NULL { continue }
+
+                $.add(obj_map(obj {
+                    OBJ_ID: 211,
+                    X: x_offset + 30 * (-asset[y].length / 2 + 0.5 + x) * scaling,
+                    Y: y_offset + 30 * (-asset.length / 2 + y) * scaling,
+                    COLOR: color_channel,
+                    SCALING: scaling + 0.01, // fixes the visual glitches
+                }))
+            }
+        }
     },
 }
